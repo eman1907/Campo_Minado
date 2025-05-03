@@ -31,7 +31,7 @@ int** inicializa_randomico(int** mat, int n2, int n){
   for (int i = 0; i < n2; i++){
     random = rand() % n; //gera numeros aleatorios que serao as coordenadas das minas
     random2 = rand() % n; // e faz com que estes numeros aleatorios sejam de 1 ate 10,20 ou 30
-   printf("%d %d\n" , random + 1, random2 + 1); //-> caso queira vizulaizar a eficiência do código imprima as coord com minas
+   //printf("%d %d\n" , random + 1, random2 + 1);/-> caso queira vizulaizar a eficiência do código imprima as coord com minas
    if (mat[random][random2] != -1) mat[random][random2] = -1;
    else n2++; 
   }
@@ -43,7 +43,7 @@ int** inicializa_matriz(int n){
    if (mat == NULL){
     printf("Memoria insuficiente.\n");
     exit(1);
-   }
+   } 
   for (int i = 0; i < n; i++){
     mat[i] = malloc(n * sizeof(int));
     if (mat[i] == NULL){
