@@ -1,192 +1,163 @@
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h> 
 #include <time.h>
+#define MINA -1
+#define MAGIC_NUMBER 10
 
-int leitura_das_coordenadas(int** mat, int x, int y, int n4){
-    int acum = 0; //acum = acum + 1 para cada termo próximo da coordenada desejada
-    if (x < n4 && mat[x + 1][y] == -1) acum++;
-    if (x > 0 && mat[x - 1][y] == -1) acum++;
-    if (y < n4 && mat[x][y + 1] == -1) acum++;
-    if (y > 0 && mat[x][y - 1] == -1) acum++;
-    if (x > 0 && y > 0 && mat[x - 1][y - 1] == -1) acum++;
-    if (x > 0 && y < n4 && mat[x - 1][y + 1] == -1) acum++;
-    if (x < n4 && y > 0 && mat[x + 1][y - 1] == -1) acum++;
-    if (x < n4 && y < n4 && mat[x + 1][y + 1] == -1) acum++;
-    return acum;
-} 
-
-int** resultado_final(int** mat, int acum, int n, int n4){ 
-for (int x = 0; x < n; x++){
-   for (int y = 0; y < n; y++){
-     if (mat[x][y] != - 1) mat[x][y] = leitura_das_coordenadas(mat, x, y, n4);
-   }
-}
-   return mat;   
-} 
-
-  
-int** inicializa_randomico(int** mat, int n2, int n){
-  int random, random2;
-  srand(time(NULL)); //util para que os termos deêm números distintos
-  for (int i = 0; i < n2; i++){
-    random = rand() % n; //gera numeros aleatorios que serao as coordenadas das minas
-    random2 = rand() % n; // e faz com que estes numeros aleatorios sejam de 1 ate 10,20 ou 30
-   //printf("%d %d\n" , random + 1, random2 + 1);/-> caso queira vizulaizar a eficiência do código imprima as coord com minas
-   if (mat[random][random2] != -1) mat[random][random2] = -1;
-   else n2++; 
-  }
-  return mat;
-}
-
-int** inicializa_matriz(int n){
-   int** mat = malloc(n * sizeof(int*)); 
-   if (mat == NULL){
-    printf("Memoria insuficiente.\n");
-    exit(1);
-   } 
-  for (int i = 0; i < n; i++){
-    mat[i] = malloc(n * sizeof(int));
-    if (mat[i] == NULL){
-      printf("Memoria insuficiente.\n");
-      exit(1); 
+int** aloca_campo(int tamanho){
+    int** campo = malloc(tamanho * sizeof(int*));
+    if (campo == NULL){
+        printf("Memoria insuficiente\n");
+        exit(1);
     }
-  }
-
-//inicializa todos os termos da matriz com -10 por ser um número impossível no jogo
- for (int i = 0; i < n; i++){
-    for (int j = 0; j < n; j++){
-      mat[i][j] = -10;
+    for (int i = 0; i < tamanho; i++){
+        campo[i] = malloc(tamanho * sizeof(int));
+        if (campo[i] == NULL){
+            printf("Memoria insuficiente\n");
+            exit(1); 
+        }
     }
-  }  
-  return mat;
+    return campo; 
 }
 
-void liberaMatriz(int** mat, int tam){
+void preenche_minas(int** campo, int tam, int mina){
+    int x, y;
+    for (int i = 0; i < mina; i++){
+        x = rand() % (tam - 2) + 1;
+        y = rand() % (tam - 2) + 1;
+        if (campo[x][y] == MINA) i--; 
+        else campo[x][y] = MINA;
+        //printf("x: %d, y: %d\n" , x, y); 
+    }
+}
+
+int calcula_coordenada(int** campo, int tamanho, int x, int y){
+    int cont = 0;
+    if (campo[x - 1][y - 1] == MINA) cont++;
+    if (campo[x][y - 1] == MINA) cont++;
+    if (campo[x + 1][y - 1] == MINA) cont++;
+    if (campo[x - 1][y] == MINA) cont++;
+    if (campo[x + 1][y] == MINA) cont++;
+    if (campo[x - 1][y + 1] == MINA) cont++;
+    if (campo[x][y + 1] == MINA) cont++;
+    if (campo[x + 1][y + 1] == MINA) cont++;
+    return cont; 
+}
+
+void imprimeCampo(int** campo, int tam){
+    for (int i = 1; i < tam - 1; i++){
+        for (int j = 1; j < tam - 1; j++){
+            if (campo[i][j] != MINA) campo[i][j] = calcula_coordenada(campo, tam, i, j);
+        }
+    }
+
+    for (int i = 1; i < tam - 1; i++){
+        for (int j = 1; j < tam - 1; j++){
+            if (campo[i][j] == MINA) printf(" %d" , MINA);
+            else printf("  %d" , campo[i][j]);
+        }
+        printf("\n"); 
+    }
+}
+
+void liberaMatriz(int** campo, int tam){
     for (int i = 0; i < tam; i++){
-        free(mat[i]);
+        free(campo[i]);
     }
-    free(mat); 
+    free(campo); 
 }
 
-void variaveis_dificuldade(int dif, int *n, int *n2, int *n3, int *n4){
- if (dif == 1){
-    *n = 10;
-    *n2 = 3;
-    *n3 = 97;
-    *n4 = 9;
-  }
-  else if (dif == 2){
-    *n = 20;
-    *n2 = 6;
-    *n3 = 394;
-    *n4 = 19;
-  }
-  else if (dif == 3){
-    *n = 30;
-    *n2 = 9;
-    *n3 = 891;   
-    *n4 = 29;
-  } 
-  else printf("Erro, numeração inválida!\n");  
+void nivel_jogo(int nivel, int* tamanho, int* venceu, int* mina){
+    if (nivel == 1) {
+        *tamanho = 12;
+        *venceu = 85; 
+        *mina = 15;
+    } else if (nivel == 2){
+        *tamanho = 22;
+        *venceu = 370;
+        *mina = 30;
+    } else {
+        *tamanho = 32;
+        *venceu = 840;
+        *mina = 60;
+    }
 }
 
 int main(){
-  int dif, n, n2, n3, n4; 
-  //dif lê a dificuldade do jogo, podendo ser fácil, médio ou difícil
-  //n será a ordem da matriz conforme a dificuldade desejada
-  //n2 vai ser a quantidade de 'minas' no jogo, referente ao numero -1
-  //n3 é o máximo de casas do jogo sem a presença das bombas
-  //n4 é o útimo termo de x
 
-  printf("Bem-Vindo ao Campo Minado!\n");
-  printf("Digite o numero da dificuldade que deseja jogar:\n");
-  printf("1 - Facil\n2 - Medio\n3 - Dificil\n");  
-  
-  scanf("%d" , &dif); //lê a dificuldade do jogo conforme especificado no enunciado
-  variaveis_dificuldade(dif, &n, &n2, &n3, &n4);
-
-  if(dif == 1 || dif == 2 || dif == 3){ //só permite a entrada em caso de numeros validos
-
-  //matriz nxn alocada dinamicamente
- int* *mat = inicializa_matriz(n);
-
-  //inclui as minas em posições aleatórias de acordo coma dificuldade do jogo
- int* *mat2 = inicializa_randomico(mat, n2, n);
-
-
-  int cont, acum;
-  acum = 0; //contará quantas bombas tem próximo a cada coordenada, exceto -1
-  cont = 0; //irá de 0 a n3 para indicar se o usuario ganhou o jogo
-  
-  printf("Coloque as coordenadas desejadas no estilo x,y ");
-  printf("e repita o processo ao final de cada rodada.\n");
-  printf("obs: nao se esqueça da virgula.\n"); 
-  
-//lerá as coordenadas fornecidas pelo usuário e vai imprimir o campo com as devidas mudanças
-//ao final da função, será retornado 1 ou 0
-int venceu, x, y;
-  while (scanf("%d,%d" , &x, &y)){ 
-    //verifica se as coordenadas são válidas
-    if ((x < 1 || y < 1) || (x > n || y > n)){ 
-      printf("Coordenadas indisponiveis, tente outros numeros.\n");
+    printf("Deseja jogar em qual nivel?\n");
+    printf("1 - Facil (10x10)\n2 - Medio (20x20)\n3 - Dificil (30x30)\n");
+    printf("Digite o numero correspondente: ");
+    int nivel, tamanho, mina, venceu;
+    scanf("%d" , &nivel);
+    if (nivel > 3 || nivel < 1){
+        printf("Nivel invalido!\n");
+        exit(1); 
     }
-      //verifica se as coordenadas já foram usadas no jogo
-    else if (mat[x - 1][y - 1] != - 10 && mat[x - 1][y - 1] != -1){
-      printf("Coordenadas repetidas, tente outros numeros.\n");
-    }
-    else { 
-    x -= 1; //para o usuario digitar numeros entre 1 e 10, 20 ou 30
-    y -= 1; 
-    if (mat[x][y] != - 1) mat[x][y] = leitura_das_coordenadas(mat, x, y, n4); 
-     
-  for (int i = 0; i < n; i++){
-    for (int j = 0; j < n; j++){
-      if (mat[i][j] == -10) printf("x "); //se a matriz nao foi inicializa com -1 ou acum
-      else if (mat[i][j] == -1 && (x != i || y != j)){
-        printf("x "); //todo m[i][j] = -1 ja foi inicilizado, logo ele só aparece caso o usuario digite suas coordenadas
-      }
-      else if (mat[i][j] == -1 && (x == i && y == j)){
-        printf("%d " , mat[i][j]); //imprime -1, somente caso x == i e y == j
-            }
-      else printf("%d " , mat[i][j]); //imprime os acumuladores já inicializados
+
+    nivel_jogo(nivel, &tamanho, &venceu, &mina);
+    //tamanho representa as dimensões da matriz que representa o campo
+    //venceu representa a quantidade de 'casas' sem minas
+    //mina representa a quantidade de minas  
+
+    int** campo = aloca_campo(tamanho);
+    for (int i = 0; i < tamanho; i++){
+        for (int j = 0; j < tamanho; j++){
+            campo[i][j] = MAGIC_NUMBER; 
         }
+    }
     printf("\n");
+
+    srand(time(NULL));
+    preenche_minas(campo, tamanho, mina);
+    //coloca a quantidade de minas definidas aleatoriamente no campo
+
+    for (int i = 0; i < tamanho; i++){
+        for (int j = 0; j < tamanho; j++){
+            printf("  x");
+        }
+        printf("\n");
     }
-    
-  cont++;
-     //critério de parada que finaliza o jogo em caso tanto de vitória quanto de derrota
-    if (mat[x][y] == -1 || cont == n3){
-      break;
+    //imprime o campo com 'x' para o usuário ter noção das dimensões
+
+    int x, y, cont_vitoria;
+    cont_vitoria = 0;
+    //x e y representam as tentativas do usuário, linha e coluna no campo, respectivamente
+    //cont_vitoria vai contar a quantidade de jogas ate 'venceu' para indicar a vitoria no jogo
+    while(1){
+        printf("Digite as coordenadas (no estilo x, y): ");
+        scanf("%d, %d" , &x, &y);
+
+        if (x < 1 || x > tamanho - 2 || y < 1 || y > tamanho - 2){
+            printf("Coordenadas invalidas!\n\n");
+
+        } else if (campo[x][y] == MINA){
+            printf("Fim de jogo!\n");
+            break; 
+
+        } else if (campo[x][y] != 10){
+            printf("Coordenadas repetidas!\n\n");
+
+        } else {
+             campo[x][y] = calcula_coordenada(campo, tamanho, x, y); 
+             //a função 'calcula_coordenada' calcula a quantidade de minas proximas a coordenada escolhida
+             for (int i = 1; i < tamanho - 1; i++){
+                for (int j = 1; j < tamanho - 1; j++){
+                    if (campo[i][j] != MAGIC_NUMBER && campo[i][j] != MINA) printf("  %d" , campo[i][j]);
+                    else printf("  x");
+                }
+                printf("\n");
+            }
+
+            cont_vitoria++;
+            if (cont_vitoria == venceu){
+                printf("Parabens, voce venceu!\n");
+                break;
             }
         }
-   }
-  if (cont == n3) venceu = 1;
-  else venceu = 0; 
+    }
 
-  //imprime a mensagem em caso de vitória
-  if (venceu){
-    printf("parabéns, vc eh fera!\n");
-  }
-  //imprime a mensagem em caso de derrota
-  else {
-    printf("game over\n");
-  } 
-
- int* *mat3 = resultado_final(mat2, acum, n, n4);
- //imprime o resulatdo final do jogo sem o 'x'
- for (int i = 0; i < n; i++){
-   for (int j = 0; j < n; j++){
-     printf("%d " , mat3[i][j]);
-   }
-   printf("\n");
- }
-      
-  //libera o espaço da matriz alocada dinamicamente
-  liberaMatriz(mat, n);
-  liberaMatriz(mat2, n);
-  liberaMatriz(mat3, n); 
-
-}
-
- return 0;
+    imprimeCampo(campo, tamanho);
+    liberaMatriz(campo, tamanho);
+    return 0; 
 }
